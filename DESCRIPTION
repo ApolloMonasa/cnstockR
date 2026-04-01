@@ -2,7 +2,11 @@ Package: cnstockR
 Type: Package
 Title: Fetch and Clean China A-Share Market Data
 Version: 0.1.0
-Authors@R: person(given = "YL", family = "Xiao", role = c("aut", "cre"), email = "apollomonasa@gmail.com")
+Authors@R: 
+    person(given = "YL", 
+           family = "Xiao", 
+           role = c("aut", "cre"), 
+           email = "apollomonasa@gmail.com")
 Description: Lightweight tools to fetch daily A-share OHLCV data from public
     domestic market endpoints and normalize into analysis-ready data frames.
 License: MIT + file LICENSE
