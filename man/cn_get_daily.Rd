@@ -32,3 +32,8 @@ cn_get_daily(
 \description{
 获取单个A股/指数的日线OHLCV数据
 }
+\examples{
+\dontrun{
+cn_get_daily("600519", start = "20230101", end = "20231231", adjust = 1)
+}
+}
