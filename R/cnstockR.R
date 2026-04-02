@@ -144,6 +144,10 @@ parse_kline_rows <- function(rows, symbol) {
 #' @param max_retry 非负数，单次请求失败时最大重试次数。
 #' @param timeout_sec 正数，请求超时时间（秒）。
 #' @return 返回标准化后的日度行情 tibble。
+#' @examples
+#' \dontrun{
+#' cn_get_daily("600519", start = "20230101", end = "20231231", adjust = 1)
+#' }
 #' @export
 cn_get_daily <- function(symbol,
                          start = "20221201",
