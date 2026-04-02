@@ -21,6 +21,9 @@ Imports:
     tibble
 Suggests:
     testthat (>= 3.0.0),
-    arrow
+    arrow,
+    knitr,
+    rmarkdown
 Config/testthat/edition: 3
 RoxygenNote: 7.3.3
+VignetteBuilder: knitr

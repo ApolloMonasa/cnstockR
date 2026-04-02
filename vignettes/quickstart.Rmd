@@ -1,0 +1,341 @@
+---
+title: "Quickstart"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{quickstart}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(cnstockR)
+library(dplyr)
+```
+
+# Quickstart
+
+如果你刚接触这个包，可以把它理解成一个“把国内公开行情接口包装成 R 数据框”的小工具。 它最主要做两件事：
+
+1.  按股票/指数代码和日期，把日线行情抓下来。
+2.  把返回结果整理成适合分析的 `tibble`，方便你继续做清洗、统计和建模。
+
+最常见的入口函数只有两个：
+
+-   `cn_get_daily()`：抓单个代码
+-   `cn_get_daily_batch()`：一次抓多个代码
+
+如果你只是想先看一眼这个包能做什么，可以把它记成一句话：
+
+> 输入代码和日期，输出结构化的行情数据。
+
+## 1. 这个包的工作原理
+
+你可以把 `cnstockR` 的工作流程想成下面这条流水线：
+
+1.  你输入一个 6 位代码，比如 `600519` 或 `000300`。
+2.  包内部把代码整理成接口能识别的请求参数。
+3.  通过公开行情接口发送请求。
+4.  把接口返回的原始文本拆成一行一行的数据。
+5.  整理成一张标准化表格，包含日期、开盘价、收盘价、成交量等字段。
+
+因此，后面你拿到的不是一堆杂乱的字符串，而是可以直接拿来做 `dplyr` 处理、回归分析和绘图的数据框。
+
+## 2. 在 R 里怎么查帮助
+
+新手最容易卡住的地方，不是不会用包，而是不知道该去哪里看帮助。R 里最常用的几种方式如下。
+
+### 2.1 `?` 和 `help()`：查看某个函数的帮助页
+
+这两个是等价的。
+
+``` r
+?cn_get_daily
+help("cn_get_daily")
+```
+
+它们适合你已经知道函数名，只是想看参数、返回值和示例的时候。
+
+### 2.2 `??`：全文模糊搜索
+
+如果你只记得一个关键词，不记得函数名，可以用 `??`。
+
+``` r
+??"parquet"
+??"日线"
+```
+
+它会在已安装包和帮助文档里做搜索，适合“我知道大概想找什么，但不知道准确名字”的场景。
+
+### 2.3 `help.search()`：按关键字搜帮助
+
+这个函数和 `??` 很像，只是写法更显式。
+
+``` r
+help.search("daily")
+help.search("parquet")
+```
+
+### 2.4 `args()` 和 `example()`：快速看参数和示例
+
+``` r
+args(cn_get_daily)
+example(cn_get_daily)
+```
+
+`args()` 适合快速看函数签名；`example()` 会尝试运行文档里的示例。
+
+### 2.5 一个实用建议
+
+如果你不确定先看哪里，可以按下面的顺序来：
+
+1.  `help(package = "cnstockR")` 看包里有哪些函数。
+2.  `?函数名` 看单个函数说明。
+3.  `example(函数名)` 看示例怎么写。
+4.  `??关键词` 在全局帮助里搜相关内容。
+
+``` r
+help(package = "cnstockR")
+```
+
+## 3. 先跑一个最小例子
+
+下面先抓一只股票的数据。我们用贵州茅台的代码 `600519`。
+
+```{r simple-example, eval = FALSE}
+mz <- cn_get_daily(
+  symbol = "600519",
+  start = "2022-12-01",
+  end = "2025-12-01",
+  adjust = 1
+)
+
+head(mz)
+```
+
+这一步做完后，你通常会看到这些字段：
+
+-   `symbol`：代码
+-   `date`：日期
+-   `open`、`close`、`high`、`low`：开高低收
+-   `volume`、`amount`：成交量和成交额
+-   `amplitude`、`pct_chg`、`chg`、`turnover`：波动和涨跌相关指标
+
+如果你想先确认抓到了多少行，可以这样看：
+
+```{r simple-summary, eval = FALSE}
+data.frame(
+  rows = nrow(mz),
+  cols = ncol(mz)
+)
+```
+
+## 4. 批量抓取多个代码
+
+当你要比较一只股票和一个指数时，`cn_get_daily_batch()` 会更方便。
+
+```{r batch-example, eval = FALSE}
+raw_data <- cn_get_daily_batch(
+  symbols = c("600519", "000300"),
+  start = "2022-12-01",
+  end = "2025-12-01",
+  adjust = 1
+)
+
+raw_data %>%
+  count(symbol)
+```
+
+这里的想法很简单：
+
+1.  先把茅台和沪深 300 的日线都抓下来。
+2.  再按 `symbol` 分组，分别整理成两张时间序列表。
+3.  最后按日期合并，比较它们的收益表现。
+
+## 5. 茅台和沪深300的 CAPM 例子
+
+这一节是这个包最适合初学者理解的实战案例。
+
+CAPM 的核心思想是：
+
+> 一只股票的收益，可以用市场整体收益来解释。
+
+如果写成公式，就是：
+
+$$
+R_i - R_f = \alpha + \beta (R_m - R_f) + \varepsilon
+$$
+
+这里：
+
+-   $R_i$ 是股票收益
+-   $R_m$ 是市场收益，这里用沪深 300 代表
+-   $R_f$ 是无风险利率
+-   $\alpha$ 表示超额收益的截距
+-   $\beta$ 表示股票对市场波动的敏感程度
+
+### 5.1 抓取数据
+
+```{r capm-data, eval = FALSE}
+start_date <- "2022-12-01"
+end_date <- "2025-12-01"
+rf_annual <- 0.012
+
+raw_data <- cn_get_daily_batch(
+  symbols = c("600519", "000300"),
+  start = start_date,
+  end = end_date,
+  adjust = 1
+)
+```
+
+### 5.2 整理成可以做 CAPM 的数据
+
+```{r capm-clean, eval = FALSE}
+maotai <- raw_data %>%
+  filter(symbol == "600519") %>%
+  transmute(date, maotai_close = close)
+
+csi300 <- raw_data %>%
+  filter(symbol == "000300") %>%
+  transmute(date, csi300_close = close)
+
+price_data <- inner_join(csi300, maotai, by = "date") %>%
+  arrange(date)
+
+capm_data <- price_data %>%
+  mutate(
+    r_m = c(NA_real_, diff(log(csi300_close))),
+    r_i = c(NA_real_, diff(log(maotai_close))),
+    rf_daily = rf_annual / 252,
+    mkt_excess = r_m - rf_daily,
+    stock_excess = r_i - rf_daily
+  ) %>%
+  filter(!is.na(mkt_excess), !is.na(stock_excess))
+```
+
+这里我把收益率写成了对数收益：
+
+$$
+r_t = \log\left(\frac{P_t}{P_{t-1}}\right)
+$$
+
+这样做有两个好处：
+
+1.  连续时间里更常见，统计建模里也很常用。
+2.  当涨跌幅不太大时，它和简单收益率很接近。
+
+`rf_annual / 252` 的意思是把年化无风险利率粗略摊到交易日上。这个做法是教学里常见的简化版本，足够用来理解 CAPM。
+
+### 5.3 拟合 CAPM 回归
+
+```{r capm-fit, eval = FALSE}
+capm_fit <- lm(stock_excess ~ mkt_excess, data = capm_data)
+summary(capm_fit)
+```
+
+你最需要关注的是两个数：
+
+-   `alpha`：截距，代表当市场超额收益为 0 时，股票的超额收益水平
+-   `beta`：斜率，代表市场上涨或下跌时，这只股票会跟着动多少
+
+一般来说：
+
+-   `beta > 1`，说明这只股票比市场更“敏感”
+-   `beta < 1`，说明它比市场更“平缓”
+-   `alpha > 0`，说明它可能有超出市场解释的部分收益
+
+### 5.4 画出 CAPM 曲线
+
+```{r capm-plot, eval = FALSE}
+alpha_est <- unname(coef(capm_fit)[1])
+beta_est <- unname(coef(capm_fit)[2])
+
+plot(
+  capm_data$mkt_excess,
+  capm_data$stock_excess,
+  pch = 16,
+  col = rgb(0.12, 0.45, 0.80, 0.35),
+  xlab = "Market Excess Return",
+  ylab = "Stock Excess Return",
+  main = "CAPM Security Characteristic Line(SCL)"
+)
+abline(capm_fit, col = "firebrick", lwd = 2)
+abline(h = 0, lty = 2, col = "gray50")
+abline(v = 0, lty = 2, col = "gray50")
+legend(
+  "topleft",
+  legend = c("observations", "CAPM fit"),
+  col = c(rgb(0.12, 0.45, 0.80, 0.35), "firebrick"),
+  pch = c(16, NA),
+  lty = c(NA, 1),
+  lwd = c(NA, 2),
+  bty = "n"
+)
+```
+
+这张图的读法很简单：
+
+1.  横轴是市场的超额收益。
+2.  纵轴是茅台的超额收益。
+3.  点越贴近红色直线，说明 CAPM 解释得越好。
+4.  红线的斜率就是 `beta`。
+
+### 5.5 把结果解释成人话
+
+你可以把 CAPM 回归结果读成这样：
+
+-   市场涨的时候，茅台通常也会跟着涨，但幅度可能更大或更小。
+-   如果 `beta` 大于 1，说明茅台对市场变化更敏感。
+-   如果 `alpha` 明显不为 0，说明单靠市场收益还不能完全解释茅台的表现。
+
+## 6. 保存结果
+
+如果你想把抓到的数据保存下来，后续离线分析，可以用 `cn_to_parquet()`。
+
+```{r save-parquet, eval = FALSE}
+cn_to_parquet(raw_data, "data/maotai_csi300_raw.parquet")
+cn_to_parquet(capm_data, "data/maotai_csi300_capm.parquet")
+```
+
+这个函数会把数据写成 parquet 文件，适合后面反复读取。
+
+## 7. 常见问题
+
+### 7.1 报错 `empty response`
+
+一般先检查这几件事：
+
+1.  代码是不是 6 位数字。
+2.  网络能不能访问公开行情接口。
+3.  日期范围是不是太大了，先缩小范围试试。
+
+### 7.2 报错 `cannot infer exchange`
+
+目前包主要支持常见的 A 股代码前缀：
+
+-   `6`、`9` 开头：通常是上证
+-   `0`、`2`、`3` 开头：通常是深证
+
+如果你输入的是别的格式，先换回纯 6 位数字再试。
+
+## 8. 最后给新手的建议
+
+如果你是第一次用这个包，推荐按这个顺序练习：
+
+1.  先用 `?cn_get_daily` 看参数。
+2.  再抓一只股票，确认返回列名。
+3.  再用 `cn_get_daily_batch()` 抓两只代码。
+4.  最后再做 CAPM 回归和画图。
+
+
+## 9. 使用提醒
+
+-   公开接口的字段、可用性和稳定性可能会随时间变化。
+-   在使用过程中，如果遇到问题，欢迎先查帮助文档，或者在GitHub提问。

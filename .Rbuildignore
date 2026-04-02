@@ -1,2 +1,4 @@
 ^README_user_manual\.md$
 ^cran_release_checklist\.md$
+^cran-comments\.md$
+^CRAN-SUBMISSION$
