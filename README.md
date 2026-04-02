@@ -7,7 +7,12 @@ A 股/指数日线数据抓取与 parquet 导出工具。
 ```r
 install.packages("remotes")
 remotes::install_github("ApolloMonasa/cnstockR")
+#如果希望下载vignettes,请使用以下命令安装
+remotes::install_github("ApolloMonasa/cnstockR", build_vignettes = TRUE)
+#这样安装后可以查看教学文章
+browseVignettes("cnstockR")
 ```
+
 
 ## 函数
 
