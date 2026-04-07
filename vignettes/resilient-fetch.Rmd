@@ -1,0 +1,154 @@
+---
+title: "Resilient Fetch"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{resilient-fetch}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(cnstockR)
+library(dplyr)
+```
+
+# 稳定抓取与自动切源
+
+这篇 vignette 面向实际使用场景：
+
+1. 单一数据源偶发不可用。
+2. 高频请求后出现临时限流。
+3. 不同机器网络环境差异导致结果不稳定。
+
+目标是让你用最少配置获得更稳的抓取体验。
+
+## 1. 先看当前状态
+
+`cn_get_status()` 会给出当前默认源、回退顺序和请求配置摘要。
+
+```{r status-demo, eval = FALSE}
+cn_get_status()
+```
+
+你通常重点看这三项：
+
+- `default_source`：当前默认源。
+- `fallback_sources`：自动模式下的回退顺序。
+- `last_failure`：最近一次失败源和错误信息。
+
+## 2. 先探测，再决定默认源
+
+在正式批量抓取前，先用 `cn_ping_sources()` 做一次轻量探测。
+
+```{r ping-demo, eval = FALSE}
+ping <- cn_ping_sources("600519")
+ping$summary
+ping$recommendation
+```
+
+推荐流程：
+
+1. 看 `summary` 里哪些源 `available = TRUE`。
+2. 用 `recommendation$suggested_default` 作为当前网络下的首选源。
+3. 用 `recommendation$suggested_auto_fallback` 直接设置自动回退。
+
+## 3. 设置自动切源
+
+如果你希望用户侧尽量“无感失败”，推荐默认使用自动模式。
+
+```{r auto-source-demo, eval = FALSE}
+cn_set_source(
+  "auto",
+  fallback_sources = c("eastmoney", "sina", "netease")
+)
+
+cn_get_source()
+```
+
+当首选源失败时，`cn_get_daily()` 会按顺序自动尝试下一个源。
+
+## 4. 配置请求层（UA、Referer、Cookie、代理）
+
+请求配置用于降低被风控概率，特别是批量抓取时。
+
+```{r req-config-demo, eval = FALSE}
+cn_set_request_config(
+  user_agents = c(
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15"
+  ),
+  referer = "https://finance.eastmoney.com/",
+  cookie = NULL,
+  proxy_pool = c("http://127.0.0.1:7890"),
+  headers = list("X-Requested-With" = "XMLHttpRequest")
+)
+
+cn_get_request_config()
+```
+
+不再需要时可以恢复默认：
+
+```{r req-config-reset-demo, eval = FALSE}
+cn_reset_request_config()
+```
+
+## 5. 稳定批量抓取模板
+
+下面是一套可直接复用的“更稳”模板。
+
+```{r stable-batch-demo, eval = FALSE}
+symbols <- c("600519", "000001", "000858", "600036")
+
+x <- cn_get_daily_batch(
+  symbols = symbols,
+  start = "2024-01-01",
+  end = "2024-12-31",
+  adjust = 1,
+  source = "auto",
+  pause_sec = 0.3,
+  continue_on_error = TRUE,
+  max_retry = 2,
+  timeout_sec = 20
+)
+
+x %>%
+  group_by(symbol) %>%
+  summarise(rows = n(), .groups = "drop")
+```
+
+## 6. 排查建议
+
+### 6.1 结果为空
+
+优先排查：
+
+1. 代码是否为 6 位。
+2. 日期区间是否过大。
+3. 用 `cn_ping_sources()` 看当前可用源。
+
+### 6.2 频繁报超时或连接错误
+
+建议：
+
+1. 提高 `timeout_sec`。
+2. 增大 `pause_sec`。
+3. 设置代理池和动态 UA。
+
+### 6.3 源间数据略有差异
+
+这属于正常现象，常见原因是更新时间和复权因子口径差异。严谨回测建议固定单一源。
+
+## 7. 小结
+
+稳定抓取可以简化成三步：
+
+1. 先 `cn_ping_sources()` 探测。
+2. 再 `cn_set_source("auto", ...)` 设置自动回退。
+3. 最后用 `cn_get_daily_batch(..., continue_on_error = TRUE)` 跑批。
