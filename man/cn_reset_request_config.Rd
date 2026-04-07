@@ -2,13 +2,16 @@
 % Please edit documentation in R/config.R
 \name{cn_reset_request_config}
 \alias{cn_reset_request_config}
-\title{Reset request configuration}
+\title{重置请求配置}
 \usage{
 cn_reset_request_config()
 }
 \value{
-Invisible request config list.
+不可见地返回重置后的配置列表。
 }
 \description{
-Reset request configuration
+将请求配置恢复为包内默认值。
+}
+\examples{
+cn_reset_request_config()
 }

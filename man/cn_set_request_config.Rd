@@ -2,7 +2,7 @@
 % Please edit documentation in R/config.R
 \name{cn_set_request_config}
 \alias{cn_set_request_config}
-\title{Update request configuration}
+\title{更新请求配置}
 \usage{
 cn_set_request_config(
   user_agents = NULL,
@@ -14,21 +14,32 @@ cn_set_request_config(
 )
 }
 \arguments{
-\item{user_agents}{Optional character vector of User-Agent candidates.}
+\item{user_agents}{可选字符向量。候选 User-Agent 列表。}
 
-\item{referer}{Optional single string Referer header.}
+\item{referer}{可选长度为 1 的字符串。Referer 请求头。}
 
-\item{cookie}{Optional single string Cookie header.}
+\item{cookie}{可选长度为 1 的字符串。Cookie 请求头。}
 
-\item{proxy_pool}{Optional character vector of proxy URLs.}
+\item{proxy_pool}{可选字符向量。代理地址列表（例如 `"http://127.0.0.1:7890"`）。}
 
-\item{headers}{Optional named list of extra headers.}
+\item{headers}{可选命名列表。附加请求头。}
 
-\item{reset}{Logical flag. If TRUE, reset to defaults.}
+\item{reset}{逻辑值。`TRUE` 时忽略其他参数并直接重置到默认配置。}
 }
 \value{
-Invisible request config list.
+不可见地返回更新后的配置列表。
 }
 \description{
-Update request configuration
+按需更新请求行为配置。仅会覆盖传入的参数，其余字段保持当前值不变。
+可用于降低频繁请求被风控的概率，例如轮换 UA、设置 Referer/Cookie 或代理池。
+}
+\examples{
+# 设置自定义请求头
+cn_set_request_config(
+  user_agents = c("ua-1", "ua-2"),
+  referer = "https://finance.eastmoney.com/"
+)
+
+# 仅重置配置
+cn_set_request_config(reset = TRUE)
 }

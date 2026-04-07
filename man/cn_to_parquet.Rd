@@ -2,18 +2,27 @@
 % Please edit documentation in R/cnstockR.R
 \name{cn_to_parquet}
 \alias{cn_to_parquet}
-\title{将数据保存为 parquet 文件}
+\title{将行情数据写出为 parquet 文件}
 \usage{
 cn_to_parquet(x, file)
 }
 \arguments{
-\item{x}{数据框或 tibble。}
+\item{x}{`data.frame` 或 `tibble`。}
 
-\item{file}{输出 parquet 文件路径。}
+\item{file}{输出 parquet 文件路径（建议以 `.parquet` 结尾）。}
 }
 \value{
-隐式返回输出文件路径。
+不可见地返回输出路径 `file`。
 }
 \description{
-将数据保存为 parquet 文件
+便捷封装 `arrow::write_parquet()`，用于将抓取结果高效落盘，便于后续分析与共享。
+}
+\details{
+该函数依赖 `arrow` 包。若未安装会直接报错。
+}
+\examples{
+\dontrun{
+x <- cn_get_daily("600519", start = "20240101", end = "20241231")
+cn_to_parquet(x, "data/600519_daily.parquet")
+}
 }

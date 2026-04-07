@@ -2,7 +2,7 @@
 % Please edit documentation in R/status.R
 \name{cn_ping_sources}
 \alias{cn_ping_sources}
-\title{Probe source availability and suggest setup}
+\title{探测各数据源可用性并给出建议配置}
 \usage{
 cn_ping_sources(
   symbol = "600519",
@@ -14,23 +14,25 @@ cn_ping_sources(
 )
 }
 \arguments{
-\item{symbol}{Six-digit stock code.}
+\item{symbol}{6 位证券代码（股票或指数）。}
 
-\item{start}{Start date string, default recent 30 days.}
+\item{start}{开始日期，默认最近 30 天（`YYYYMMDD`）。}
 
-\item{end}{End date string, default today.}
+\item{end}{结束日期，默认当天（`YYYYMMDD`）。}
 
-\item{adjust}{Adjust mode: 0 none, 1 qfq, 2 hfq.}
+\item{adjust}{复权方式：`0` 不复权，`1` 前复权，`2` 后复权。}
 
-\item{max_retry}{Retry count for each source probe.}
+\item{max_retry}{每个源探测请求的最大重试次数。}
 
-\item{timeout_sec}{Timeout seconds for each probe.}
+\item{timeout_sec}{每个源探测请求的超时时间（秒）。}
 }
 \value{
-A list with `summary` tibble and `recommendation` list.
+一个列表：
+  `summary` 为探测结果 `tibble`；`recommendation` 为建议配置列表（含推荐默认源）。
 }
 \description{
-Probe source availability and suggest setup
+对当前候选数据源逐一进行小范围抓取测试，返回每个源是否可用、返回行数、
+实际使用的复权参数与错误信息，并给出推荐的默认源与自动回退设置建议。
 }
 \examples{
 \dontrun{

@@ -2,7 +2,7 @@
 % Please edit documentation in R/config.R
 \name{cn_set_source}
 \alias{cn_set_source}
-\title{Set default data source}
+\title{设置默认数据源}
 \usage{
 cn_set_source(
   source = c("auto", "eastmoney", "sina", "netease"),
@@ -10,13 +10,21 @@ cn_set_source(
 )
 }
 \arguments{
-\item{source}{One of auto, eastmoney, sina, netease.}
+\item{source}{默认源，可选 `"auto"`、`"eastmoney"`、`"sina"`、`"netease"`。}
 
-\item{fallback_sources}{Optional source vector used when source is auto.}
+\item{fallback_sources}{可选字符向量。仅在 `source = "auto"` 时生效，
+表示自动模式下的候选源顺序。}
 }
 \value{
-Invisible source config list.
+不可见地返回更新后的源配置列表。
 }
 \description{
-Set default data source
+配置全局默认数据源。若设为 `"auto"`，将按 `fallback_sources` 顺序自动回退。
+}
+\examples{
+# 自动模式并指定回退顺序
+cn_set_source("auto", fallback_sources = c("sina", "eastmoney", "netease"))
+
+# 固定单一源
+cn_set_source("sina")
 }

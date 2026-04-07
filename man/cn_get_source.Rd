@@ -2,13 +2,16 @@
 % Please edit documentation in R/config.R
 \name{cn_get_source}
 \alias{cn_get_source}
-\title{Get current default data source}
+\title{获取当前默认数据源}
 \usage{
 cn_get_source()
 }
 \value{
-Character scalar source name.
+长度为 1 的字符向量，取值为 `"auto"`、`"eastmoney"`、`"sina"` 或 `"netease"`。
 }
 \description{
-Get current default data source
+读取当前会话中的默认数据源设置。
+}
+\examples{
+cn_get_source()
 }

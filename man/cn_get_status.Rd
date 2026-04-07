@@ -2,19 +2,20 @@
 % Please edit documentation in R/status.R
 \name{cn_get_status}
 \alias{cn_get_status}
-\title{Get runtime status for source and request settings}
+\title{获取运行时状态摘要}
 \usage{
 cn_get_status()
 }
 \value{
-A list including default source, fallback order, request summary,
-  and last failure metadata.
+一个列表，包含：
+  `default_source`（当前默认源）、`fallback_sources`（自动模式回退顺序）、
+  `request`（请求配置摘要）以及 `last_failure`（最近失败元数据，若无则为 `NULL`）。
 }
 \description{
-Get runtime status for source and request settings
+汇总当前数据源配置、请求配置摘要以及最近一次失败信息，便于快速诊断拉取异常。
 }
 \examples{
-\dontrun{
-cn_get_status()
-}
+st <- cn_get_status()
+st$default_source
+st$request
 }

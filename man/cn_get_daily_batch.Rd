@@ -2,7 +2,7 @@
 % Please edit documentation in R/cnstockR.R
 \name{cn_get_daily_batch}
 \alias{cn_get_daily_batch}
-\title{批量抓取多个代码并按行合并}
+\title{批量抓取多个代码的日线行情并按行合并}
 \usage{
 cn_get_daily_batch(
   symbols,
@@ -17,27 +17,42 @@ cn_get_daily_batch(
 )
 }
 \arguments{
-\item{symbols}{字符向量，元素为6位代码。}
+\item{symbols}{非空字符向量，元素为 6 位证券代码。}
 
-\item{start}{开始日期，支持 Date 或字符串（YYYYMMDD / YYYY-MM-DD）。}
+\item{start}{开始日期。支持 `Date` 或字符串（`YYYYMMDD` / `YYYY-MM-DD`）。}
 
-\item{end}{结束日期，支持 Date 或字符串（YYYYMMDD / YYYY-MM-DD）。}
+\item{end}{结束日期。支持 `Date` 或字符串（`YYYYMMDD` / `YYYY-MM-DD`）。}
 
-\item{adjust}{整数，复权方式。}
+\item{adjust}{整数复权方式：`0` 不复权，`1` 前复权，`2` 后复权。}
 
-\item{source}{数据源，支持 `auto`、`eastmoney`、`sina`、`netease`。}
+\item{source}{数据源：`"auto"`、`"eastmoney"`、`"sina"`、`"netease"`。}
 
-\item{pause_sec}{数值型，请求之间的暂停秒数。}
+\item{pause_sec}{非负数。相邻代码请求之间的暂停秒数，建议在批量场景中适当增大。}
 
-\item{continue_on_error}{逻辑值，TRUE 时跳过失败代码并记录 warning。}
+\item{continue_on_error}{逻辑值。`TRUE` 时跳过失败代码并给出 warning；
+`FALSE` 时遇到首个失败即终止并报错。}
 
-\item{max_retry}{非负数，单次请求失败时最大重试次数。}
+\item{max_retry}{非负整数。单个上游请求失败时的最大重试次数。}
 
-\item{timeout_sec}{正数，请求超时时间（秒）。}
+\item{timeout_sec}{正数。单次请求超时时间（秒）。}
 }
 \value{
-返回合并后的行情数据 tibble。若全部失败则返回空 tibble。
+合并后的 `tibble`。当 `continue_on_error = TRUE` 且全部代码失败时，
+  返回 0 行 `tibble`。
 }
 \description{
-批量抓取多个代码并按行合并
+对输入代码向量逐个调用 [cn_get_daily()]，并将结果按行拼接为单个 `tibble`。
+函数会自动去重 `symbols`，并支持请求间隔控制、失败即停或失败跳过两种模式。
+}
+\examples{
+\dontrun{
+cn_get_daily_batch(
+  symbols = c("600519", "000001", "000300"),
+  start = "20240101",
+  end = "20241231",
+  adjust = 1,
+  pause_sec = 0.2,
+  continue_on_error = TRUE
+)
+}
 }

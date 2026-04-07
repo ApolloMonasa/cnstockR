@@ -2,7 +2,7 @@
 % Please edit documentation in R/cnstockR.R
 \name{cn_get_daily}
 \alias{cn_get_daily}
-\title{获取单个A股/指数的日线OHLCV数据}
+\title{获取单个A股/指数的日线 OHLCV 行情}
 \usage{
 cn_get_daily(
   symbol,
@@ -15,28 +15,38 @@ cn_get_daily(
 )
 }
 \arguments{
-\item{symbol}{字符串，6位股票/指数代码，例如 "600519"。}
+\item{symbol}{字符串，6 位证券代码（股票或指数），例如 `"600519"`、`"000300"`。}
 
-\item{start}{开始日期，支持 Date 或字符串（YYYYMMDD / YYYY-MM-DD）。}
+\item{start}{开始日期。支持 `Date` 或字符串（`YYYYMMDD` / `YYYY-MM-DD`）。}
 
-\item{end}{结束日期，支持 Date 或字符串（YYYYMMDD / YYYY-MM-DD）。}
+\item{end}{结束日期。支持 `Date` 或字符串（`YYYYMMDD` / `YYYY-MM-DD`）。}
 
-\item{adjust}{整数，复权方式：0 不复权，1 前复权，2 后复权。}
+\item{adjust}{整数复权方式：`0` 不复权，`1` 前复权，`2` 后复权。}
 
-\item{source}{数据源，支持 `auto`、`eastmoney`、`sina`、`netease`。}
+\item{source}{数据源：`"auto"`、`"eastmoney"`、`"sina"`、`"netease"`。
+其中 `"auto"` 会按配置的 fallback 顺序自动切换。}
 
-\item{max_retry}{非负数，单次请求失败时最大重试次数。}
+\item{max_retry}{非负整数。单个上游请求失败时的最大重试次数。}
 
-\item{timeout_sec}{正数，请求超时时间（秒）。}
+\item{timeout_sec}{正数。单次请求超时时间（秒）。}
 }
 \value{
-返回标准化后的日度行情 tibble。
+一个 `tibble`，通常包含以下字段：
+  `symbol`, `date`, `open`, `close`, `high`, `low`, `volume`, `amount`,
+  `amplitude`, `pct_chg`, `chg`, `turnover`。
+  若指定源返回空数据会报错；`source = "auto"` 且全部源失败时会汇总失败信息后报错。
 }
 \description{
-获取单个A股/指数的日线OHLCV数据
+从指定数据源抓取单个股票或指数在给定日期区间内的日线数据，并统一整理为
+标准字段（symbol/date/open/close/high/low/volume/amount 等）。
+当 `source = "auto"` 时，会按照当前回退顺序依次尝试多个上游源，尽量提高可用性。
 }
 \examples{
 \dontrun{
+# 前复权抓取单个股票
 cn_get_daily("600519", start = "20230101", end = "20231231", adjust = 1)
+
+# 自动切源（推荐默认）
+cn_get_daily("000300", source = "auto")
 }
 }

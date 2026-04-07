@@ -2,14 +2,19 @@
 % Please edit documentation in R/config.R
 \name{cn_get_request_config}
 \alias{cn_get_request_config}
-\title{Get request behavior for upstream calls}
+\title{获取当前请求配置}
 \usage{
 cn_get_request_config()
 }
 \value{
-A list with request config fields: user_agents, referer, cookie,
-  proxy_pool, and headers.
+一个列表，包含以下字段：
+  `user_agents`, `referer`, `cookie`, `proxy_pool`, `headers`。
 }
 \description{
-Get request behavior for upstream calls
+返回用于上游请求的运行时配置，包括 User-Agent 池、Referer、Cookie、代理池和
+额外请求头。若用户未设置，则返回包内默认配置。
+}
+\examples{
+cfg <- cn_get_request_config()
+names(cfg)
 }

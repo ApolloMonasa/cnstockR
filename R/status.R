@@ -26,14 +26,18 @@ cn_clear_last_failure <- function() {
   invisible(NULL)
 }
 
-#' Get runtime status for source and request settings
+#' 获取运行时状态摘要
 #'
-#' @return A list including default source, fallback order, request summary,
-#'   and last failure metadata.
+#' 汇总当前数据源配置、请求配置摘要以及最近一次失败信息，便于快速诊断拉取异常。
+#'
+#' @return 一个列表，包含：
+#'   `default_source`（当前默认源）、`fallback_sources`（自动模式回退顺序）、
+#'   `request`（请求配置摘要）以及 `last_failure`（最近失败元数据，若无则为 `NULL`）。
+#'
 #' @examples
-#' \dontrun{
-#' cn_get_status()
-#' }
+#' st <- cn_get_status()
+#' st$default_source
+#' st$request
 #' @export
 cn_get_status <- function() {
   source_cfg <- cn_get_source_config()
@@ -53,15 +57,21 @@ cn_get_status <- function() {
   )
 }
 
-#' Probe source availability and suggest setup
+#' 探测各数据源可用性并给出建议配置
 #'
-#' @param symbol Six-digit stock code.
-#' @param start Start date string, default recent 30 days.
-#' @param end End date string, default today.
-#' @param adjust Adjust mode: 0 none, 1 qfq, 2 hfq.
-#' @param max_retry Retry count for each source probe.
-#' @param timeout_sec Timeout seconds for each probe.
-#' @return A list with `summary` tibble and `recommendation` list.
+#' 对当前候选数据源逐一进行小范围抓取测试，返回每个源是否可用、返回行数、
+#' 实际使用的复权参数与错误信息，并给出推荐的默认源与自动回退设置建议。
+#'
+#' @param symbol 6 位证券代码（股票或指数）。
+#' @param start 开始日期，默认最近 30 天（`YYYYMMDD`）。
+#' @param end 结束日期，默认当天（`YYYYMMDD`）。
+#' @param adjust 复权方式：`0` 不复权，`1` 前复权，`2` 后复权。
+#' @param max_retry 每个源探测请求的最大重试次数。
+#' @param timeout_sec 每个源探测请求的超时时间（秒）。
+#'
+#' @return 一个列表：
+#'   `summary` 为探测结果 `tibble`；`recommendation` 为建议配置列表（含推荐默认源）。
+#'
 #' @examples
 #' \dontrun{
 #' res <- cn_ping_sources("600519")
