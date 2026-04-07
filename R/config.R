@@ -13,7 +13,7 @@ cn_request_config_defaults <- function() {
 }
 
 cn_source_defaults <- function() {
-  list(default_source = "auto", fallback_sources = c("eastmoney", "sina", "netease"))
+  list(default_source = "auto", fallback_sources = c("eastmoney", "tencent", "sina", "netease"))
 }
 
 #' 获取当前请求配置
@@ -133,7 +133,7 @@ cn_get_source_config <- function() {
 #'
 #' 配置全局默认数据源。若设为 `"auto"`，将按 `fallback_sources` 顺序自动回退。
 #'
-#' @param source 默认源，可选 `"auto"`、`"eastmoney"`、`"sina"`、`"netease"`。
+#' @param source 默认源，可选 `"auto"`、`"eastmoney"`、`"tencent"`、`"sina"`、`"netease"`。
 #' @param fallback_sources 可选字符向量。仅在 `source = "auto"` 时生效，
 #'   表示自动模式下的候选源顺序。
 #'
@@ -141,12 +141,12 @@ cn_get_source_config <- function() {
 #'
 #' @examples
 #' # 自动模式并指定回退顺序
-#' cn_set_source("auto", fallback_sources = c("sina", "eastmoney", "netease"))
+#' cn_set_source("auto", fallback_sources = c("eastmoney", "tencent", "sina", "netease"))
 #'
 #' # 固定单一源
 #' cn_set_source("sina")
 #' @export
-cn_set_source <- function(source = c("auto", "eastmoney", "sina", "netease"), fallback_sources = NULL) {
+cn_set_source <- function(source = c("auto", "eastmoney", "tencent", "sina", "netease"), fallback_sources = NULL) {
   source <- match.arg(source)
   config <- cn_get_source_config()
   config$default_source <- source
@@ -156,7 +156,7 @@ cn_set_source <- function(source = c("auto", "eastmoney", "sina", "netease"), fa
     }
     config$fallback_sources <- fallback_sources
   } else if (source == "auto") {
-    config$fallback_sources <- c("eastmoney", "sina", "netease")
+    config$fallback_sources <- c("eastmoney", "tencent", "sina", "netease")
   } else {
     config$fallback_sources <- character(0)
   }
@@ -168,7 +168,7 @@ cn_set_source <- function(source = c("auto", "eastmoney", "sina", "netease"), fa
 #'
 #' 读取当前会话中的默认数据源设置。
 #'
-#' @return 长度为 1 的字符向量，取值为 `"auto"`、`"eastmoney"`、`"sina"` 或 `"netease"`。
+#' @return 长度为 1 的字符向量，取值为 `"auto"`、`"eastmoney"`、`"tencent"`、`"sina"` 或 `"netease"`。
 #'
 #' @examples
 #' cn_get_source()

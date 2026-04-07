@@ -8,7 +8,7 @@
 #' @param start 开始日期。支持 `Date` 或字符串（`YYYYMMDD` / `YYYY-MM-DD`）。
 #' @param end 结束日期。支持 `Date` 或字符串（`YYYYMMDD` / `YYYY-MM-DD`）。
 #' @param adjust 整数复权方式：`0` 不复权，`1` 前复权，`2` 后复权。
-#' @param source 数据源：`"auto"`、`"eastmoney"`、`"sina"`、`"netease"`。
+#' @param source 数据源：`"auto"`、`"eastmoney"`、`"tencent"`、`"sina"`、`"netease"`。
 #'   其中 `"auto"` 会按配置的 fallback 顺序自动切换。
 #' @param max_retry 非负整数。单个上游请求失败时的最大重试次数。
 #' @param timeout_sec 正数。单次请求超时时间（秒）。
@@ -38,10 +38,10 @@ cn_get_daily <- function(symbol,
   adjust <- validate_adjust(adjust)
 
   source <- tolower(source)
-  source <- match.arg(source, choices = c("auto", "eastmoney", "sina", "netease"))
+  source <- match.arg(source, choices = c("auto", "eastmoney", "tencent", "sina", "netease"))
   if (source == "auto") {
     source_config <- cn_get_source_config()
-    candidate_sources <- unique(c(source_config$fallback_sources, "eastmoney", "sina", "netease"))
+    candidate_sources <- unique(c(source_config$fallback_sources, "eastmoney", "tencent", "sina", "netease"))
   } else {
     candidate_sources <- source
   }
@@ -83,10 +83,10 @@ cn_get_daily <- function(symbol,
   }
 
   if (source == "auto" && !is.null(last_err)) {
-    stop("代码 ", symbol, " 的所有数据源均失败：", conditionMessage(last_err))
+    stop("all data sources failed for symbol: ", symbol, ": ", conditionMessage(last_err))
   }
 
-  stop("代码 ", symbol, " 返回空结果")
+  stop("empty response for symbol: ", symbol)
 }
 
 #' 批量抓取多个代码的日线行情并按行合并
@@ -98,7 +98,7 @@ cn_get_daily <- function(symbol,
 #' @param start 开始日期。支持 `Date` 或字符串（`YYYYMMDD` / `YYYY-MM-DD`）。
 #' @param end 结束日期。支持 `Date` 或字符串（`YYYYMMDD` / `YYYY-MM-DD`）。
 #' @param adjust 整数复权方式：`0` 不复权，`1` 前复权，`2` 后复权。
-#' @param source 数据源：`"auto"`、`"eastmoney"`、`"sina"`、`"netease"`。
+#' @param source 数据源：`"auto"`、`"eastmoney"`、`"tencent"`、`"sina"`、`"netease"`。
 #' @param pause_sec 非负数。相邻代码请求之间的暂停秒数，建议在批量场景中适当增大。
 #' @param continue_on_error 逻辑值。`TRUE` 时跳过失败代码并给出 warning；
 #'   `FALSE` 时遇到首个失败即终止并报错。

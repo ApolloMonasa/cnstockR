@@ -70,7 +70,7 @@ df_all <- cn_get_daily_batch(
 
 ### 2.1 稳定性与切源
 
-默认情况下，`cn_get_daily()` 和 `cn_get_daily_batch()` 会先尝试东方财经，再自动降级到新浪和其他可用源，尽量减少单一源被封后的失败概率。
+默认情况下，`cn_get_daily()` 和 `cn_get_daily_batch()` 会先尝试东方财富，再自动回退到腾讯、新浪、网易等可用源，尽量减少单一源短时失效导致的抓取失败。
 
 ```r
 library(cnstockR)
@@ -91,7 +91,10 @@ cn_set_request_config(
 )
 ```
 
-注意：`sina` 已支持前复权/后复权；`netease` 回退主要用于不复权数据。
+说明：默认情况下，请求层会按数据源自动注入对应 Referer/Origin；
+`cn_set_request_config(referer = ...)` 属于高级覆写选项，通常只在你明确需要固定来源头时使用。
+
+注意：`eastmoney`、`tencent`、`sina` 支持前复权/后复权；`netease` 回退主要用于不复权数据。
 
 ### 3) `cn_to_parquet()`
 将数据写出为 parquet 文件。
@@ -196,8 +199,68 @@ GitHub Actions 会自动在 Linux、Windows、macOS 上执行 `R CMD check`。
 - 包会尽量统一输出字段：`symbol`, `date`, `open`, `close`, `high`, `low`, `volume`, `amount`, `amplitude`, `pct_chg`, `chg`, `turnover`。
 
 2. 复权一致性
-- `eastmoney` 与 `sina` 支持前复权/后复权。
+- `eastmoney`、`tencent` 与 `sina` 支持前复权/后复权。
 - `netease` 回退主要用于不复权数据（`adjust = 0`）。
 
 3. 跨源差异
 - 同一天数据在不同源可能存在细微差异（复权因子口径、更新时间、成交额单位等），严谨回测建议固定单一源。
+
+## For Devs
+
+本节面向参与维护与扩展的开发者，介绍目录结构、抓取链路和关键实现策略。
+
+### 1) 项目结构
+
+- `R/cnstockR.R`：用户主入口（单标的、批量、parquet 导出）。
+- `R/sources.R`：统一源分发层，按 source 路由到具体抓取实现。
+- `R/sources_eastmoney.R`、`R/sources_tencent.R`、`R/sources_sina.R`、`R/sources_netease.R`：各源抓取与源内解析。
+- `R/http.R`：统一请求执行层（重试、超时、头信息、代理）。
+- `R/parsers.R`：通用解析辅助（CSV/K 线等）。
+- `R/config.R`：请求配置与默认源配置。
+- `R/status.R`：运行时状态与探测工具（`cn_get_status()` / `cn_ping_sources()`）。
+- `tests/testthat/`：分源测试、回退测试、配置测试、状态测试。
+- `man/`：由 roxygen2 生成的帮助文档。
+
+### 2) 抓取链路
+
+1. 用户调用 `cn_get_daily()` 或 `cn_get_daily_batch()`。
+2. 参数先在校验层规范化（代码、日期、复权方式）。
+3. 若 `source = "auto"`，按 fallback 顺序依次尝试。
+4. 每个源通过 `get_daily_by_source()` 分发到对应抓取器。
+5. 源实现返回统一字段，最终上层按统一 tibble 输出。
+
+### 3) 反爬与稳定性策略
+
+- 按源定制请求头：请求层会按目标域名自动注入对应 Referer/Origin，避免跨站头信息导致风控。
+- 多端点回退：新浪实现采用多端点轮询（jsonp/json_v2/openapi），降低单端点失效概率。
+- 参数分档回退：腾讯实现会按安全 datalen 分档请求，规避大参数导致的 `param error`。
+- 失败隔离：单源失败不会污染其他源，`auto` 模式会继续尝试后续候选源。
+
+### 4) 字段与语义约定
+
+- 统一输出字段：`symbol`, `date`, `open`, `close`, `high`, `low`, `volume`, `amount`, `amplitude`, `pct_chg`, `chg`, `turnover`。
+- `date` 为 `Date` 类型，`symbol` 为 6 位代码字符串。
+- 非所有上游都提供完整字段，缺失字段使用 `NA` 补齐。
+
+### 5) 开发与检查建议
+
+- 快速检查：`source("scripts/ci-check.R")`
+- 运行测试：`devtools::test()`
+- 仅跑单文件测试：`devtools::test(filter = "tencent-source")`
+- 更新文档：`devtools::document()`
+- 本地联调：`devtools::load_all(reset = TRUE)` 后运行 `cn_ping_sources()` 验证各源可用性。
+
+### 5.1) 注释与报错规范
+
+- 导出函数使用 roxygen 中文文档（参数、返回值、示例完整）。
+- 内部注释只解释复杂逻辑，不写“显而易见”的逐行注释。
+- 错误信息优先中文、语义明确，并尽量包含关键上下文（如 symbol/source）。
+- 新增逻辑时优先补充对应 `testthat` 用例，避免回归。
+
+### 6) 扩展新数据源的推荐步骤
+
+1. 新建 `R/sources_xxx.R`，实现 `get_daily_xxx()` 并输出标准字段。
+2. 在 `R/sources.R` 的分发函数中注册该源。
+3. 更新 `R/config.R` 的 source 枚举与默认 fallback。
+4. 增加 `tests/testthat/test-xxx-source.R`，覆盖成功、空结果、结构漂移等场景。
+5. 更新 roxygen 注释并重新生成帮助文档。

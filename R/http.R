@@ -4,9 +4,35 @@ build_request <- function(url, timeout_sec = 20) {
     httr2::req_timeout(timeout_sec)
 
   headers <- config$headers
-  if (!is.null(config$referer)) {
+  host <- tryCatch(tolower(httr2::url_parse(url)$hostname), error = function(e) "")
+
+  # 按源自动设置默认 Referer/Origin，避免跨站头导致风控或空响应。
+  referer_by_host <- NULL
+  origin_by_host <- NULL
+  if (grepl("eastmoney\\.com$", host)) {
+    referer_by_host <- "https://finance.eastmoney.com/"
+    origin_by_host <- "https://finance.eastmoney.com"
+  } else if (grepl("sina\\.com\\.cn$|sina\\.cn$", host)) {
+    referer_by_host <- "https://finance.sina.com.cn/"
+    origin_by_host <- "https://finance.sina.com.cn"
+  } else if (grepl("gtimg\\.cn$", host)) {
+    referer_by_host <- "https://gu.qq.com/"
+    origin_by_host <- "https://gu.qq.com"
+  } else if (grepl("money\\.163\\.com$", host)) {
+    referer_by_host <- "https://quotes.money.163.com/"
+    origin_by_host <- "https://quotes.money.163.com"
+  }
+
+  if (!is.null(referer_by_host)) {
+    headers$Referer <- referer_by_host
+  } else if (!is.null(config$referer)) {
     headers$Referer <- config$referer
   }
+
+  if (!is.null(origin_by_host) && is.null(headers$Origin)) {
+    headers$Origin <- origin_by_host
+  }
+
   if (!is.null(config$cookie)) {
     headers$Cookie <- config$cookie
   }
@@ -35,10 +61,10 @@ request_text <- function(url, query = list(), max_retry = 2, timeout_sec = 20) {
   last_err <- NULL
 
   if (!is.numeric(max_retry) || length(max_retry) != 1 || max_retry < 0) {
-    stop("max_retry must be a non-negative number")
+    stop("max_retry 必须是非负数")
   }
   if (!is.numeric(timeout_sec) || length(timeout_sec) != 1 || timeout_sec <= 0) {
-    stop("timeout_sec must be a positive number")
+    stop("timeout_sec 必须是正数")
   }
 
   for (i in seq_len(max_retry + 1)) {
@@ -57,7 +83,7 @@ request_text <- function(url, query = list(), max_retry = 2, timeout_sec = 20) {
     Sys.sleep(0.5 * i)
   }
 
-  stop("request failed: ", conditionMessage(last_err))
+  stop("请求失败：", conditionMessage(last_err))
 }
 
 request_json <- function(url, query, max_retry = 2, timeout_sec = 20) {

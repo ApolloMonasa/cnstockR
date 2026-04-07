@@ -23,7 +23,7 @@ cn_get_daily(
 
 \item{adjust}{整数复权方式：`0` 不复权，`1` 前复权，`2` 后复权。}
 
-\item{source}{数据源：`"auto"`、`"eastmoney"`、`"sina"`、`"netease"`。
+\item{source}{数据源：`"auto"`、`"eastmoney"`、`"tencent"`、`"sina"`、`"netease"`。
 其中 `"auto"` 会按配置的 fallback 顺序自动切换。}
 
 \item{max_retry}{非负整数。单个上游请求失败时的最大重试次数。}

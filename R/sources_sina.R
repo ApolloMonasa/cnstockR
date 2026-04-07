@@ -78,22 +78,63 @@ fill_factor <- function(x) {
 }
 
 parse_sina_adjust_factor <- function(text) {
-  hits <- regmatches(
-    text,
-    gregexpr('\\["([0-9]{4}-[0-9]{2}-[0-9]{2})","?([0-9.]+)"?', text, perl = TRUE)
-  )[[1]]
-
-  if (length(hits) == 0) {
+  txt <- trimws(text)
+  if (!nzchar(txt)) {
     return(tibble::tibble())
   }
 
-  dates <- sub('^\\["([0-9]{4}-[0-9]{2}-[0-9]{2})".*$', '\\1', hits)
-  factors <- sub('^\\["[0-9]{4}-[0-9]{2}-[0-9]{2}","?([0-9.]+)"?.*$', '\\1', hits)
+  txt <- sub("^\\s*/\\*.*?\\*/\\s*", "", txt, perl = TRUE)
+  txt <- sub("^\\s*var\\s+[^=]+\\s*=\\s*", "", txt, perl = TRUE)
+  txt <- sub(";\\s*/\\*.*$", "", txt, perl = TRUE)
+  txt <- sub(";\\s*$", "", txt)
+  txt <- trimws(txt)
 
-  tibble::tibble(
-    date = as.Date(dates),
-    factor = as_num(factors)
-  )
+  parsed <- tryCatch(jsonlite::fromJSON(txt, simplifyVector = TRUE), error = function(e) NULL)
+  if (is.null(parsed)) {
+    legacy_hits <- regmatches(
+      txt,
+      gregexpr('\\["([0-9]{4}-[0-9]{2}-[0-9]{2})","?([0-9.]+)"?', txt, perl = TRUE)
+    )[[1]]
+
+    if (length(legacy_hits) == 0) {
+      return(tibble::tibble())
+    }
+
+    dates <- sub('^\\["([0-9]{4}-[0-9]{2}-[0-9]{2})".*$', '\\1', legacy_hits)
+    factors <- sub('^\\["[0-9]{4}-[0-9]{2}-[0-9]{2}","?([0-9.]+)"?.*$', '\\1', legacy_hits)
+
+    return(tibble::tibble(
+      date = as.Date(dates),
+      factor = as_num(factors)
+    ))
+  }
+
+  if (is.list(parsed) && !is.null(parsed$data)) {
+    factor_tbl <- parsed$data
+    if (is.data.frame(factor_tbl)) {
+      date_col <- intersect(c("d", "day", "date"), names(factor_tbl))[1]
+      factor_col <- intersect(c("f", "factor"), names(factor_tbl))[1]
+      if (!is.na(date_col) && !is.na(factor_col)) {
+        return(tibble::tibble(
+          date = as.Date(factor_tbl[[date_col]]),
+          factor = as_num(factor_tbl[[factor_col]])
+        ))
+      }
+    }
+  }
+
+  if (is.data.frame(parsed)) {
+    date_col <- intersect(c("d", "day", "date"), names(parsed))[1]
+    factor_col <- intersect(c("f", "factor"), names(parsed))[1]
+    if (!is.na(date_col) && !is.na(factor_col)) {
+      return(tibble::tibble(
+        date = as.Date(parsed[[date_col]]),
+        factor = as_num(parsed[[factor_col]])
+      ))
+    }
+  }
+
+  tibble::tibble()
 }
 
 get_sina_adjust_factor <- function(symbol, method, max_retry, timeout_sec) {
@@ -155,12 +196,15 @@ apply_sina_adjust <- function(x, symbol, adjust, max_retry, timeout_sec) {
   method <- if (identical(adjust, 1L)) "qfq" else "hfq"
   factors <- get_sina_adjust_factor(symbol, method, max_retry = max_retry, timeout_sec = timeout_sec)
   if (nrow(factors) == 0) {
-    return(tibble::tibble())
+    return(x)
   }
 
-  merged <- merge(x, factors, by = "date", all.x = TRUE, sort = FALSE)
-  merged <- merged[order(merged$date), , drop = FALSE]
+  # Current Sina factor feed is event-based rather than daily; keep factor rows
+  # during merge so forward fill can propagate latest factor to trade dates.
+  merged <- merge(x, factors, by = "date", all = TRUE, sort = TRUE)
   merged$factor <- fill_factor(merged$factor)
+  merged <- merged[!is.na(merged$symbol), , drop = FALSE]
+  merged <- merged[order(merged$date), , drop = FALSE]
   merged <- merged[!is.na(merged$factor) & merged$factor > 0, , drop = FALSE]
 
   if (nrow(merged) == 0) {
@@ -183,17 +227,87 @@ apply_sina_adjust <- function(x, symbol, adjust, max_retry, timeout_sec) {
 }
 
 get_daily_sina <- function(symbol, dr, adjust, max_retry, timeout_sec) {
-  url <- "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData"
-  query <- list(
-    symbol = symbol_to_sina_symbol(symbol),
+  s <- symbol_to_sina_symbol(symbol)
+
+  start_dt <- as.Date(dr$start, "%Y%m%d")
+  end_dt <- as.Date(dr$end, "%Y%m%d")
+  day_span <- as.integer(end_dt - start_dt) + 1L
+  target_datalen <- max(200L, min(1500L, as.integer(ceiling(day_span * 1.5) + 60L)))
+  datalen_candidates <- unique(c(target_datalen, 1000L, 500L, 300L, 200L))
+
+  base_query <- list(
+    symbol = s,
     scale = "240",
-    ma = "no",
-    datalen = "10000"
+    ma = "no"
   )
 
-  txt <- request_text(url, query = query, max_retry = max_retry, timeout_sec = timeout_sec)
-  payload <- unwrap_json_payload(txt)
-  dat <- tryCatch(jsonlite::fromJSON(payload), error = function(e) NULL)
+  endpoint_candidates <- list(
+    list(
+      url = "https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData",
+      parser = function(txt) {
+        tryCatch(jsonlite::fromJSON(txt), error = function(e) NULL)
+      }
+    ),
+    list(
+      url = "https://quotes.sina.cn/cn/api/openapi.php/CN_MarketDataService.getKLineData",
+      parser = function(txt) {
+        dat <- tryCatch(jsonlite::fromJSON(txt), error = function(e) NULL)
+        if (!is.null(dat) && is.list(dat) && !is.null(dat$result) && !is.null(dat$result$data)) {
+          return(dat$result$data)
+        }
+        NULL
+      }
+    ),
+    list(
+      url = "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData",
+      parser = function(txt) {
+        payload <- unwrap_json_payload(txt)
+        tryCatch(jsonlite::fromJSON(payload), error = function(e) NULL)
+      }
+    ),
+    list(
+      url = "https://quotes.sina.cn/cn/api/jsonp_v2.php/var%20_kline=/CN_MarketDataService.getKLineData",
+      parser = function(txt) {
+        payload <- unwrap_json_payload(txt)
+        tryCatch(jsonlite::fromJSON(payload), error = function(e) NULL)
+      }
+    )
+  )
+
+  dat <- NULL
+  for (ep in endpoint_candidates) {
+    for (datalen in datalen_candidates) {
+      query <- c(base_query, list(datalen = as.character(datalen)))
+      txt <- tryCatch(
+        request_text(ep$url, query = query, max_retry = max_retry, timeout_sec = timeout_sec),
+        error = function(e) ""
+      )
+
+      if (!nzchar(txt)) {
+        next
+      }
+
+      parsed <- ep$parser(txt)
+      if (is.null(parsed)) {
+        next
+      }
+
+      if (is.data.frame(parsed) && nrow(parsed) > 0) {
+        dat <- parsed
+        break
+      }
+
+      if (is.list(parsed) && length(parsed) > 0 && is.data.frame(parsed[[1]]) && nrow(parsed[[1]]) > 0) {
+        dat <- parsed[[1]]
+        break
+      }
+    }
+
+    if (!is.null(dat)) {
+      break
+    }
+  }
+
   if (is.null(dat)) {
     return(tibble::tibble())
   }

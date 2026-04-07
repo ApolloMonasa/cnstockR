@@ -25,7 +25,7 @@ cn_get_daily_batch(
 
 \item{adjust}{整数复权方式：`0` 不复权，`1` 前复权，`2` 后复权。}
 
-\item{source}{数据源：`"auto"`、`"eastmoney"`、`"sina"`、`"netease"`。}
+\item{source}{数据源：`"auto"`、`"eastmoney"`、`"tencent"`、`"sina"`、`"netease"`。}
 
 \item{pause_sec}{非负数。相邻代码请求之间的暂停秒数，建议在批量场景中适当增大。}
 

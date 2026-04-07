@@ -2,7 +2,7 @@ test_that("sina source supports qfq adjust with factor", {
   testthat::local_mocked_bindings(
     request_text = function(url, query = list(), max_retry = 2, timeout_sec = 20) {
       if (grepl("qfq\\.js$", url)) {
-        return('var data={"data":[["2024-01-01","2"],["2024-01-02","2"]]};')
+        return('var sh600519qfq={"total":2,"data":[{"d":"2024-01-01","f":"2"},{"d":"2024-01-02","f":"2"}]};/* comment */')
       }
       '[{"day":"2024-01-01","open":"10","high":"12","low":"9","close":"11","volume":"100"}, {"day":"2024-01-02","open":"12","high":"14","low":"11","close":"13","volume":"120"}]'
     },
@@ -22,7 +22,7 @@ test_that("sina source supports hfq adjust with factor", {
   testthat::local_mocked_bindings(
     request_text = function(url, query = list(), max_retry = 2, timeout_sec = 20) {
       if (grepl("hfq\\.js$", url)) {
-        return('var data={"data":[["2024-01-01","2"],["2024-01-02","2"]]};')
+        return('var sh600519hfq={"total":2,"data":[{"d":"2024-01-01","f":"2"},{"d":"2024-01-02","f":"2"}]};/* comment */')
       }
       '[{"day":"2024-01-01","open":"10","high":"12","low":"9","close":"11","volume":"100"}, {"day":"2024-01-02","open":"12","high":"14","low":"11","close":"13","volume":"120"}]'
     },
@@ -35,6 +35,15 @@ test_that("sina source supports hfq adjust with factor", {
   expect_equal(nrow(out), 2)
   expect_equal(out$open[[1]], 20)
   expect_equal(out$close[[2]], 26)
+})
+
+test_that("sina adjust factor parser handles current json object format", {
+  raw <- 'var sh600519qfq={"total":2,"data":[{"d":"2024-01-01","f":"2"},{"d":"2024-01-02","f":"1.5"}]};/* comment */'
+  factors <- cnstockR:::parse_sina_adjust_factor(raw)
+
+  expect_equal(nrow(factors), 2)
+  expect_equal(as.character(factors$date[[1]]), "2024-01-01")
+  expect_equal(factors$factor[[2]], 1.5)
 })
 
 test_that("unwrap_json_payload handles anti-bot script prefix", {

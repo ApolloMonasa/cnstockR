@@ -10,7 +10,7 @@ cn_set_source(
 )
 }
 \arguments{
-\item{source}{默认源，可选 `"auto"`、`"eastmoney"`、`"sina"`、`"netease"`。}
+\item{source}{默认源，可选 `"auto"`、`"eastmoney"`、`"tencent"`、`"sina"`、`"netease"`。}
 
 \item{fallback_sources}{可选字符向量。仅在 `source = "auto"` 时生效，
 表示自动模式下的候选源顺序。}
@@ -23,7 +23,7 @@ cn_set_source(
 }
 \examples{
 # 自动模式并指定回退顺序
-cn_set_source("auto", fallback_sources = c("sina", "eastmoney", "netease"))
+cn_set_source("auto", fallback_sources = c("eastmoney", "tencent", "sina", "netease"))
 
 # 固定单一源
 cn_set_source("sina")

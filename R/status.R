@@ -89,7 +89,7 @@ cn_ping_sources <- function(symbol = "600519",
   adjust <- validate_adjust(adjust)
 
   source_cfg <- cn_get_source_config()
-  sources <- unique(c(source_cfg$fallback_sources, "eastmoney", "sina", "netease"))
+  sources <- unique(c(source_cfg$fallback_sources, "eastmoney", "tencent", "sina", "netease"))
 
   parts <- lapply(sources, function(one_source) {
     one_adjust <- if (identical(one_source, "netease")) 0L else adjust

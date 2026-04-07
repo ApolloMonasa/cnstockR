@@ -7,14 +7,14 @@ normalize_symbol <- function(symbol) {
 validate_symbol <- function(symbol) {
   s <- normalize_symbol(symbol)
   if (!grepl("^[0-9]{6}$", s)) {
-    stop("symbol must be 6 digits, e.g. 600519 or 000300")
+    stop("symbol 必须是 6 位数字，例如 600519 或 000300")
   }
   s
 }
 
 validate_adjust <- function(adjust) {
   if (!is.numeric(adjust) || length(adjust) != 1 || !adjust %in% c(0, 1, 2)) {
-    stop("adjust must be one of 0 (none), 1 (forward), 2 (backward)")
+    stop("adjust 必须是 0（不复权）、1（前复权）或 2（后复权）")
   }
   as.integer(adjust)
 }
@@ -25,7 +25,7 @@ normalize_yyyymmdd <- function(x, arg_name) {
   }
 
   if (!is.character(x) || length(x) != 1) {
-    stop(arg_name, " must be Date or character in YYYYMMDD / YYYY-MM-DD")
+    stop(arg_name, " 必须是 Date 或 YYYYMMDD / YYYY-MM-DD 字符串")
   }
 
   x <- trimws(x)
@@ -37,7 +37,7 @@ normalize_yyyymmdd <- function(x, arg_name) {
     return(gsub("-", "", x))
   }
 
-  stop(arg_name, " must be Date or character in YYYYMMDD / YYYY-MM-DD")
+  stop(arg_name, " 必须是 Date 或 YYYYMMDD / YYYY-MM-DD 字符串")
 }
 
 validate_date_range <- function(start, end) {
@@ -45,7 +45,7 @@ validate_date_range <- function(start, end) {
   end8 <- normalize_yyyymmdd(end, "end")
 
   if (start8 > end8) {
-    stop("start must be earlier than or equal to end")
+    stop("start 不能晚于 end")
   }
 
   list(start = start8, end = end8)
@@ -62,7 +62,7 @@ symbol_to_secid <- function(symbol) {
     return(paste0("0.", s))
   }
 
-  stop("cannot infer exchange from symbol: ", symbol)
+  stop("无法从 symbol 推断交易所：", symbol)
 }
 
 symbol_to_secid_candidates <- function(symbol) {

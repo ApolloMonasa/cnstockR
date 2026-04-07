@@ -7,7 +7,7 @@
 cn_get_source()
 }
 \value{
-长度为 1 的字符向量，取值为 `"auto"`、`"eastmoney"`、`"sina"` 或 `"netease"`。
+长度为 1 的字符向量，取值为 `"auto"`、`"eastmoney"`、`"tencent"`、`"sina"` 或 `"netease"`。
 }
 \description{
 读取当前会话中的默认数据源设置。
