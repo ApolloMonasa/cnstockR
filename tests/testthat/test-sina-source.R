@@ -36,3 +36,17 @@ test_that("sina source supports hfq adjust with factor", {
   expect_equal(out$open[[1]], 20)
   expect_equal(out$close[[2]], 26)
 })
+
+test_that("unwrap_json_payload handles anti-bot script prefix", {
+  raw <- paste0(
+    "/*<script>location.href='//sina.com';</script>*/\\n",
+    '=([{"day":"2026-04-07","open":"1","high":"2","low":"0.5","close":"1.5","volume":"10"}]);'
+  )
+
+  payload <- cnstockR:::unwrap_json_payload(raw)
+  dat <- jsonlite::fromJSON(payload)
+
+  expect_true(is.data.frame(dat))
+  expect_equal(dat$day[[1]], "2026-04-07")
+  expect_equal(dat$close[[1]], "1.5")
+})

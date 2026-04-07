@@ -22,13 +22,28 @@ unwrap_json_payload <- function(text) {
     return(sub(";\\s*$", "", txt))
   }
 
-  if (grepl("=", txt, fixed = TRUE)) {
-    txt <- sub("^[^=]*=", "", txt)
+  # Sina may prepend anti-bot scripts/comments before JSONP payload.
+  # Extract the last assignment payload instead of splitting at the first '='.
+  txt <- sub("^\\s*/\\*.*?\\*/\\s*", "", txt, perl = TRUE)
+
+  m_wrap <- regexec("=\\s*\\((\\s*[\\[{].*[\\]}]\\s*)\\)\\s*;?\\s*$", txt, perl = TRUE)
+  hit_wrap <- regmatches(txt, m_wrap)[[1]]
+  if (length(hit_wrap) >= 2) {
+    return(trimws(hit_wrap[2]))
   }
 
+  m_plain <- regexec("=\\s*([\\[{].*[\\]}])\\s*;?\\s*$", txt, perl = TRUE)
+  hit_plain <- regmatches(txt, m_plain)[[1]]
+  if (length(hit_plain) >= 2) {
+    return(trimws(hit_plain[2]))
+  }
+
+  txt <- sub("^.*=", "", txt)
   txt <- sub(";\\s*$", "", txt)
+  txt <- trimws(txt)
   if (grepl("^\\(", txt) && grepl("\\)$", txt)) {
     txt <- substr(txt, 2, nchar(txt) - 1)
+    txt <- trimws(txt)
   }
 
   txt

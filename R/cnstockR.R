@@ -83,10 +83,10 @@ cn_get_daily <- function(symbol,
   }
 
   if (source == "auto" && !is.null(last_err)) {
-    stop("all data sources failed for symbol: ", symbol, ": ", conditionMessage(last_err))
+    stop("代码 ", symbol, " 的所有数据源均失败：", conditionMessage(last_err))
   }
 
-  stop("empty response for symbol: ", symbol)
+  stop("代码 ", symbol, " 返回空结果")
 }
 
 #' 批量抓取多个代码的日线行情并按行合并
