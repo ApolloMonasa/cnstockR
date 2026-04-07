@@ -323,9 +323,42 @@ cn_to_parquet(capm_data, "data/maotai_csi300_capm.parquet")
 -   `6`、`9` 开头：通常是上证
 -   `0`、`2`、`3` 开头：通常是深证
 
-如果你输入的是别的格式，先换回纯 6 位数字再试。
 
-## 8. 最后给新手的建议
+## 8. 自动切源实战
+
+当你遇到单一源不稳定时，可以让包自动探测并回退。
+
+```{r auto-fallback-demo, eval = FALSE}
+library(cnstockR)
+
+# 1) 看当前状态
+cn_get_status()
+
+# 2) 探测各源可用性
+ping <- cn_ping_sources("600519")
+ping$summary
+ping$recommendation
+
+# 3) 使用自动切源抓取
+df <- cn_get_daily(
+  symbol = "600519",
+  start = "2024-01-01",
+  end = "2024-12-31",
+  adjust = 1,
+  source = "auto"
+)
+
+head(df)
+```
+
+如果你希望固定一个默认源，也可以这样设置：
+
+```{r set-default-source-demo, eval = FALSE}
+cn_set_source("sina")
+cn_get_source()
+```
+
+## 9. 最后给新手的建议
 
 如果你是第一次用这个包，推荐按这个顺序练习：
 
@@ -335,7 +368,7 @@ cn_to_parquet(capm_data, "data/maotai_csi300_capm.parquet")
 4.  最后再做 CAPM 回归和画图。
 
 
-## 9. 使用提醒
+## 10. 使用提醒
 
 -   公开接口的字段、可用性和稳定性可能会随时间变化。
 -   在使用过程中，如果遇到问题，欢迎先查帮助文档，或者在GitHub提问。

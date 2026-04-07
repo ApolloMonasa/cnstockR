@@ -2,4 +2,11 @@
 
 export(cn_get_daily)
 export(cn_get_daily_batch)
+export(cn_get_request_config)
+export(cn_get_source)
+export(cn_get_status)
+export(cn_ping_sources)
+export(cn_reset_request_config)
+export(cn_set_request_config)
+export(cn_set_source)
 export(cn_to_parquet)

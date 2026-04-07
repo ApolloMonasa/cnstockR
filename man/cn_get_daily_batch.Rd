@@ -9,6 +9,7 @@ cn_get_daily_batch(
   start = "20221201",
   end = format(Sys.Date(), "\%Y\%m\%d"),
   adjust = 1,
+  source = cn_get_source(),
   pause_sec = 0.15,
   continue_on_error = FALSE,
   max_retry = 2,
@@ -23,6 +24,8 @@ cn_get_daily_batch(
 \item{end}{结束日期，支持 Date 或字符串（YYYYMMDD / YYYY-MM-DD）。}
 
 \item{adjust}{整数，复权方式。}
+
+\item{source}{数据源，支持 `auto`、`eastmoney`、`sina`、`netease`。}
 
 \item{pause_sec}{数值型，请求之间的暂停秒数。}
 

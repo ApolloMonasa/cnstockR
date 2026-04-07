@@ -9,6 +9,7 @@ cn_get_daily(
   start = "20221201",
   end = format(Sys.Date(), "\%Y\%m\%d"),
   adjust = 1,
+  source = cn_get_source(),
   max_retry = 2,
   timeout_sec = 20
 )
@@ -21,6 +22,8 @@ cn_get_daily(
 \item{end}{结束日期，支持 Date 或字符串（YYYYMMDD / YYYY-MM-DD）。}
 
 \item{adjust}{整数，复权方式：0 不复权，1 前复权，2 后复权。}
+
+\item{source}{数据源，支持 `auto`、`eastmoney`、`sina`、`netease`。}
 
 \item{max_retry}{非负数，单次请求失败时最大重试次数。}
 
