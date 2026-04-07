@@ -5,7 +5,7 @@
 \title{设置默认数据源}
 \usage{
 cn_set_source(
-  source = c("auto", "eastmoney", "sina", "netease"),
+  source = c("auto", "eastmoney", "tencent", "sina", "netease"),
   fallback_sources = NULL
 )
 }

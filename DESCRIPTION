@@ -1,6 +1,6 @@
 Package: cnstockR
 Type: Package
-Title: Fetch and Clean China A-Share Market Data
+Title: Fetch and Clean China a-Share Market Data
 Version: 0.1.0
 Authors@R: 
     person(given = "YL", 
