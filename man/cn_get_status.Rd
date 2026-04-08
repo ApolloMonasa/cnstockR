@@ -8,7 +8,7 @@ cn_get_status()
 }
 \value{
 一个列表，包含：
-  `default_source`（当前默认源）、`fallback_sources`（自动模式回退顺序，默认含 eastmoney/tencent/sina/netease）、
+  `default_source`（当前默认源）、`fallback_sources`（自动模式回退顺序）、
   `request`（请求配置摘要）以及 `last_failure`（最近失败元数据，若无则为 `NULL`）。
 }
 \description{

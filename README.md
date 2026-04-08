@@ -1,7 +1,10 @@
 # cnstockR
 
-A 股/指数日线数据抓取与 parquet 导出工具。
-
+A 股/指数日线数据抓取与 parquet 导出工具，支持配置代理和UA头，目前支持以下数据源：
+- eastmony（东方财富，全字段支持）
+- sina(新浪，部分字段缺失)
+- tencent(腾讯，部分字段缺失)
+- netease(网易，目前有bug)
 ## 安装
 
 ```r
